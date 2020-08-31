@@ -2,5 +2,12 @@
   "name": "TwitterPlaysPokemon",
   "version": "1.0.0",
   "main": "index.js",
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "watch": "yarn tsc src/index --outDir build/ --watch",
+    "index": "node build/index.js"
+  },
+  "dependencies": {
+    "typescript": "^4.0.2"
+  }
 }
