@@ -49,6 +49,31 @@ type Tweet = {
   action: Action | null;
 };
 
+mainLoop();
+async function mainLoop() {
+  let lastTweet: Tweet | null = null;
+  console.log("Waiting for start...");
+  await sleep(5 * 1000);
+  console.log("Started!");
+
+  while (true) {
+    console.log("Receiving order...");
+    const order = await findNextTweetCommand(
+      lastTweet?.id ?? process.env.LAST_TWEET_ID
+    );
+    console.log("Order received!", order);
+
+    console.log("Applying action...");
+    await applyAction(order.action);
+
+    console.log("Tweeting...");
+    lastTweet = await tweet(order);
+    console.log("Tweeted!");
+
+    await sleep(30 * 1000);
+  }
+}
+
 function getPathToImage() {
   const imageFiles = fs.readdirSync(screenshotsPath);
   if (imageFiles.length !== 1) {
@@ -67,7 +92,6 @@ const exampleTweet: Tweet = {
   action: "UP",
 };
 
-tweet(exampleTweet);
 async function tweet(order: Tweet) {
   const pathToImage = getPathToImage();
   var data = fs.readFileSync(pathToImage);
@@ -82,7 +106,10 @@ async function tweet(order: Tweet) {
     };
 
     const tweet = await client.post("statuses/update", status);
-    return normalizeTweet(tweet);
+    const normalizedTweet = normalizeTweet(tweet);
+    fs.unlinkSync(pathToImage);
+
+    return normalizedTweet;
   } catch (error) {
     throw new Error(`Error on tweet: ${error}`);
   }
@@ -96,9 +123,11 @@ async function applyAction(action: Action) {
   pressAction("PAUSE");
   pressAction(action);
   await sleep(5000);
+
   pressAction("PRINT");
   pressAction("SAVE_STATE");
   pressAction("PAUSE");
+  await sleep(1000);
 }
 
 function pressAction(action: Action) {
@@ -121,8 +150,8 @@ const actionToButton: { [key in Action]: string } = {
   SAVE_STATE: "numpad_9",
 };
 
-async function findNextTweetCommand(): Promise<Tweet> {
-  const mentions = await getRepliesToTweet(process.env.LAST_TWEET_ID);
+async function findNextTweetCommand(lastTweetId: string): Promise<Tweet> {
+  const mentions = await getRepliesToTweet(lastTweetId);
   const mentionsWithActions = mentions.filter((tweet) => tweet.action !== null);
   if (mentionsWithActions.length > 0) {
     return getRandomItemFromArray(mentionsWithActions);
