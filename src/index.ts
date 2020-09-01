@@ -1,5 +1,6 @@
 import Twitter from "twitter";
 import RobotJS from "robotjs";
+import fs from "fs";
 require("dotenv").config();
 
 const client = new Twitter({
@@ -9,18 +10,7 @@ const client = new Twitter({
   access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
 });
 
-var data = require("fs").readFileSync(
-  "C:\\Users\\Guilherme Oliveira\\Downloads\\Pokemon - LeafGreen Version (USA, Europe) (Rev 1)\\image.png"
-);
-
-//const commandTweet = await findNextTweetCommand()
-//executeCommand(commandTweet.command)
-//waitForAction()
-//printGame()
-//pause()
-//saveState()
-//tweetPrintScreen(commandTweet.username, commandTweet.link)
-//waitTweetCooldown()
+const screenshotsPath = "C:\\Screenshots\\";
 
 type Action =
   | "UP"
@@ -38,6 +28,8 @@ type Action =
   | "SAVE_STATE";
 
 const PLAYER_ACTIONS: Action[] = [
+  "START",
+  "SELECT",
   "UP",
   "DOWN",
   "LEFT",
@@ -46,8 +38,6 @@ const PLAYER_ACTIONS: Action[] = [
   "B",
   "L",
   "R",
-  "START",
-  "SELECT",
 ];
 
 type Tweet = {
@@ -59,16 +49,47 @@ type Tweet = {
   action: Action | null;
 };
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function getPathToImage() {
+  const imageFiles = fs.readdirSync(screenshotsPath);
+  if (imageFiles.length !== 1) {
+    throw new Error(`${imageFiles.length} image files on ${screenshotsPath}`);
+  }
+
+  return `${screenshotsPath}${imageFiles}`;
 }
 
-main();
-async function main() {
-  await sleep(2000);
-  while (true) {
-    await applyAction("A");
+const exampleTweet: Tweet = {
+  id: "1300701282525745152",
+  inReplyToStatusId: "1300654842751455233",
+  link: "https://twitter.com/Anon12916260/status/1300701282525745152",
+  username: "Anon12916260",
+  text: "asdasd",
+  action: "UP",
+};
+
+tweet(exampleTweet);
+async function tweet(order: Tweet) {
+  const pathToImage = getPathToImage();
+  var data = fs.readFileSync(pathToImage);
+  try {
+    const media = await client.post("media/upload", {
+      media: data,
+    });
+
+    var status = {
+      status: `${order.action} pressed by @${order.username} ${order.link}`,
+      media_ids: media.media_id_string,
+    };
+
+    const tweet = await client.post("statuses/update", status);
+    return normalizeTweet(tweet);
+  } catch (error) {
+    throw new Error(`Error on tweet: ${error}`);
   }
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function applyAction(action: Action) {
