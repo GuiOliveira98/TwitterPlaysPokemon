@@ -1,6 +1,5 @@
 import Twitter from "twitter";
-import { type } from "os";
-import { generateKeyPairSync } from "crypto";
+import RobotJS from "robotjs";
 require("dotenv").config();
 
 const client = new Twitter({
@@ -33,9 +32,12 @@ type Action =
   | "L"
   | "R"
   | "START"
-  | "SELECT";
+  | "SELECT"
+  | "PRINT"
+  | "PAUSE"
+  | "SAVE_STATE";
 
-const ACTIONS: Action[] = [
+const PLAYER_ACTIONS: Action[] = [
   "UP",
   "DOWN",
   "LEFT",
@@ -57,7 +59,46 @@ type Tweet = {
   action: Action | null;
 };
 
-findNextTweetCommand().then((tweet) => console.log(tweet));
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+main();
+async function main() {
+  await sleep(2000);
+  while (true) {
+    await applyAction("A");
+  }
+}
+
+async function applyAction(action: Action) {
+  pressAction("PAUSE");
+  pressAction(action);
+  await sleep(5000);
+  pressAction("PRINT");
+  pressAction("SAVE_STATE");
+  pressAction("PAUSE");
+}
+
+function pressAction(action: Action) {
+  RobotJS.keyTap(actionToButton[action]);
+}
+
+const actionToButton: { [key in Action]: string } = {
+  UP: "up",
+  DOWN: "down",
+  LEFT: "left",
+  RIGHT: "right",
+  A: "numpad_1",
+  B: "numpad_2",
+  L: "numpad_4",
+  R: "numpad_5",
+  START: "numpad_3",
+  SELECT: "numpad_6",
+  PRINT: "numpad_7",
+  PAUSE: "numpad_8",
+  SAVE_STATE: "numpad_9",
+};
 
 async function findNextTweetCommand(): Promise<Tweet> {
   const mentions = await getRepliesToTweet(process.env.LAST_TWEET_ID);
@@ -104,7 +145,7 @@ function normalizeTweet(raw: any): Tweet {
 
 function findActionFromText(text: string) {
   const words = text.toLowerCase().split(" ");
-  const action = ACTIONS.find((action) =>
+  const action = PLAYER_ACTIONS.find((action) =>
     words.find((word) => word === action.toLowerCase())
   );
   return action ?? null;
@@ -112,7 +153,7 @@ function findActionFromText(text: string) {
 
 async function getRandomCommandTweet(): Promise<Tweet> {
   const response = await client.get("search/tweets", {
-    q: getRandomItemFromArray(ACTIONS),
+    q: getRandomItemFromArray(PLAYER_ACTIONS),
     since_id: 54321,
     tweet_mode: "extended",
     result_type: "popular",
