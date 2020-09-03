@@ -47,6 +47,8 @@ type Tweet = {
   link: string;
   inReplyToStatusId: string | null;
   action: Action | null;
+  doubleModifier: boolean;
+  tripleModifier: boolean;
 };
 
 mainLoop();
@@ -64,7 +66,7 @@ async function mainLoop() {
     console.log("Order received!", order);
 
     console.log("Applying action...");
-    await applyAction(order.action);
+    await applyAction(order.action, order.doubleModifier, order.tripleModifier);
 
     console.log("Tweeting...");
     lastTweet = await tweet(order, lastTweetId);
@@ -95,7 +97,13 @@ async function tweet(order: Tweet, lastTweetId: string) {
       in_reply_to_status_id: lastTweetId,
       username: "TweetsPlaysPkmn",
       media_ids: media.media_id_string,
-      status: `Button ${order.action} pressed by @${order.username}!
+      status: `Button ${order.action} pressed ${
+        order.tripleModifier
+          ? "3 times "
+          : order.doubleModifier
+          ? "2 times "
+          : ""
+      }by @${order.username}!
 [by tweeting a message with the word "${order.action}"]
 
 What should we do next?
@@ -119,10 +127,18 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function applyAction(action: Action) {
+async function applyAction(
+  action: Action,
+  doubleModifier: boolean,
+  tripleModifier: boolean
+) {
+  const timesToBeApplied = tripleModifier ? 3 : doubleModifier ? 2 : 1;
   pressAction("PAUSE");
-  pressAction(action);
-  await sleep(5000);
+
+  for (var i = 0; i < timesToBeApplied; i++) {
+    pressAction(action);
+    await sleep(5000);
+  }
 
   pressAction("PRINT");
   pressAction("SAVE_STATE");
@@ -183,6 +199,9 @@ function normalizeTweet(raw: any): Tweet {
   const text = raw.full_text ?? raw.text;
   const action = findActionFromText(text);
 
+  const doubleModifier = text.toLowerCase().includes("double");
+  const tripleModifier = text.toLowerCase().includes("triple");
+
   return {
     id,
     username,
@@ -190,6 +209,8 @@ function normalizeTweet(raw: any): Tweet {
     inReplyToStatusId,
     text,
     action,
+    doubleModifier,
+    tripleModifier,
   };
 }
 
