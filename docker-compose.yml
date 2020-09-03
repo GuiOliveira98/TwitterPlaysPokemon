@@ -1,0 +1,11 @@
+version: "3"
+services:
+  gba:
+    build: .
+    ports:
+      - "3535:3535"
+
+    volumes:
+      - //c/Twitter Plays Pokemon/rom:/usr/src/app/rom
+      - //c/Twitter Plays Pokemon/save:/usr/src/app/save
+      - //c/Twitter Plays Pokemon/screenshot:/usr/src/app/screenshot
