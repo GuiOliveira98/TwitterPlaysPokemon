@@ -2,6 +2,7 @@ import GameBoyAdvance from "gbajs";
 import fs from "fs";
 import express from "express";
 import bodyParser from "body-parser";
+const PNG = require("pngjs").PNG;
 
 var gba = new GameBoyAdvance();
 gba.logLevel = gba.LOG_ERROR;
@@ -46,7 +47,11 @@ app.get("/execute", function (req, res) {
 
   if (message === "SCREENSHOT") {
     var png = gba.screenshot();
-    png.pack().pipe(fs.createWriteStream("screenshot/image.png"));
+    var buffer = PNG.sync.write(png);
+
+    res.writeHead(200, { "Content-Type": "image/gif" });
+    res.end(buffer, "binary");
+    return;
   }
 
   if (message === "LOAD_SAVE") {
