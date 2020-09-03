@@ -57,20 +57,20 @@ async function mainLoop() {
   console.log("Started!");
 
   while (true) {
+    var lastTweetId = lastTweet?.id ?? process.env.LAST_TWEET_ID;
+
     console.log("Receiving order...");
-    const order = await findNextTweetCommand(
-      lastTweet?.id ?? process.env.LAST_TWEET_ID
-    );
+    const order = await findNextTweetCommand(lastTweetId);
     console.log("Order received!", order);
 
     console.log("Applying action...");
     await applyAction(order.action);
 
     console.log("Tweeting...");
-    lastTweet = await tweet(order);
+    lastTweet = await tweet(order, lastTweetId);
     console.log("Tweeted!");
 
-    await sleep(30 * 1000);
+    await sleep(5 * 60 * 1000);
   }
 }
 
@@ -83,16 +83,7 @@ function getPathToImage() {
   return `${screenshotsPath}${imageFiles}`;
 }
 
-const exampleTweet: Tweet = {
-  id: "1300701282525745152",
-  inReplyToStatusId: "1300654842751455233",
-  link: "https://twitter.com/Anon12916260/status/1300701282525745152",
-  username: "Anon12916260",
-  text: "asdasd",
-  action: "UP",
-};
-
-async function tweet(order: Tweet) {
+async function tweet(order: Tweet, lastTweetId: string) {
   const pathToImage = getPathToImage();
   var data = fs.readFileSync(pathToImage);
   try {
@@ -101,8 +92,17 @@ async function tweet(order: Tweet) {
     });
 
     var status = {
-      status: `${order.action} pressed by @${order.username} ${order.link}`,
+      in_reply_to_status_id: lastTweetId,
+      username: "TweetsPlaysPkmn",
       media_ids: media.media_id_string,
+      status: `Button ${order.action} pressed by @${order.username}!
+[by tweeting a message with the word "${order.action}"]
+
+What should we do next?
+[Reply with a button to be pressed]
+
+#Pokemon #PokemonMastersEX
+${order.link}`,
     };
 
     const tweet = await client.post("statuses/update", status);
@@ -203,10 +203,10 @@ function findActionFromText(text: string) {
 
 async function getRandomCommandTweet(): Promise<Tweet> {
   const response = await client.get("search/tweets", {
-    q: getRandomItemFromArray(PLAYER_ACTIONS),
+    q: "Pokemon " + getRandomItemFromArray(PLAYER_ACTIONS),
     since_id: 54321,
     tweet_mode: "extended",
-    result_type: "popular",
+    result_type: "recent",
     count: 50,
     include_entities: true,
   });
