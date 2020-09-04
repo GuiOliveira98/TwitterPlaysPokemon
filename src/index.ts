@@ -54,12 +54,12 @@ type Tweet = {
 mainLoop();
 async function mainLoop() {
   let lastTweet: Tweet | null = null;
-  console.log("Waiting for start...");
-  await sleep(5 * 1000);
-  console.log("Started!");
 
   while (true) {
     var lastTweetId = lastTweet?.id ?? process.env.LAST_TWEET_ID;
+
+    console.log("Please select the GBA emulator in the next 10 seconds...");
+    await sleep(10 * 1000);
 
     console.log("Receiving order...");
     const order = await findNextTweetCommand(lastTweetId);
@@ -72,7 +72,10 @@ async function mainLoop() {
     lastTweet = await tweet(order, lastTweetId);
     console.log("Tweeted!");
 
-    await sleep(5 * 60 * 1000);
+    for (var i = 0; i < 5; i++) {
+      console.log(`${5 - i} minutes remaining...`);
+      await sleep(60 * 1000);
+    }
   }
 }
 

@@ -7,6 +7,7 @@
     "build": "yarn tsc -p tsconfig.json",
     "watch": "yarn tsc -p tsconfig.json --watch",
     "index": "node build/index.js",
+    "controller": "node build/controller.js",
     "gba": "node build/gba.js"
   },
   "dependencies": {
@@ -14,10 +15,7 @@
     "@types/twitter": "^1.7.0",
     "body-parser": "^1.19.0",
     "dotenv": "^8.2.0",
-    "express": "^4.17.1",
-    "gbajs": "^1.1.2",
     "pngjs": "^5.0.0",
-    "redis": "^3.0.2",
     "twitter": "^1.7.1",
     "typescript": "^4.0.2"
   }
