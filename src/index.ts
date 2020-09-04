@@ -20,7 +20,10 @@ type Action =
   | "L"
   | "R"
   | "START"
-  | "SELECT";
+  | "SELECT"
+  | "LOAD_SAVE"
+  | "DOWNLOAD_SAVE"
+  | "SCREENSHOT";
 
 const PLAYER_ACTIONS: Action[] = [
   "START",
@@ -89,6 +92,7 @@ async function mainLoop() {
 
     console.log("Applying action...");
     await applyAction(order.action, order.doubleModifier, order.tripleModifier);
+    await executeAction("DOWNLOAD_SAVE");
 
     console.log("Tweeting...");
     lastTweet = await tweet(order, lastTweetId);
