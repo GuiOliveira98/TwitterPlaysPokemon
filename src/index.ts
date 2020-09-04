@@ -1,6 +1,6 @@
 import Twitter from "twitter";
-import RobotJS from "robotjs";
-import fs from "fs";
+import concatStream from "concat-stream";
+import axios from "axios";
 require("dotenv").config();
 
 const client = new Twitter({
@@ -9,8 +9,6 @@ const client = new Twitter({
   access_token_key: process.env.TWITTER_ACCESS_TOKEN_KEY,
   access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
 });
-
-const screenshotsPath = "C:\\Screenshots\\";
 
 type Action =
   | "UP"
@@ -22,10 +20,7 @@ type Action =
   | "L"
   | "R"
   | "START"
-  | "SELECT"
-  | "PRINT"
-  | "PAUSE"
-  | "SAVE_STATE";
+  | "SELECT";
 
 const PLAYER_ACTIONS: Action[] = [
   "START",
@@ -51,15 +46,42 @@ type Tweet = {
   tripleModifier: boolean;
 };
 
+const API = process.env.API;
+async function downloadScreenshot() {
+  var fullImage = null;
+
+  const response = await axios.post(
+    `${API}/execute`,
+    {
+      command: "screenshot",
+    },
+    {
+      responseType: "stream",
+    }
+  );
+
+  response.data.pipe(
+    concatStream(function onStreamFinished(image) {
+      fullImage = image;
+    })
+  );
+
+  while (fullImage === null) await sleep(100);
+  return fullImage;
+}
+
+async function executeAction(action: Action) {
+  await axios.post(`${API}/execute`, {
+    command: action,
+  });
+}
+
 mainLoop();
 async function mainLoop() {
   let lastTweet: Tweet | null = null;
 
   while (true) {
     var lastTweetId = lastTweet?.id ?? process.env.LAST_TWEET_ID;
-
-    console.log("Please select the GBA emulator in the next 10 seconds...");
-    await sleep(10 * 1000);
 
     console.log("Receiving order...");
     const order = await findNextTweetCommand(lastTweetId);
@@ -79,21 +101,12 @@ async function mainLoop() {
   }
 }
 
-function getPathToImage() {
-  const imageFiles = fs.readdirSync(screenshotsPath);
-  if (imageFiles.length !== 1) {
-    throw new Error(`${imageFiles.length} image files on ${screenshotsPath}`);
-  }
-
-  return `${screenshotsPath}${imageFiles}`;
-}
-
 async function tweet(order: Tweet, lastTweetId: string) {
-  const pathToImage = getPathToImage();
-  var data = fs.readFileSync(pathToImage);
   try {
+    const screenshot = await downloadScreenshot();
+
     const media = await client.post("media/upload", {
-      media: data,
+      media: screenshot,
     });
 
     var status = {
@@ -118,7 +131,6 @@ ${order.link}`,
 
     const tweet = await client.post("statuses/update", status);
     const normalizedTweet = normalizeTweet(tweet);
-    fs.unlinkSync(pathToImage);
 
     return normalizedTweet;
   } catch (error) {
@@ -136,38 +148,11 @@ async function applyAction(
   tripleModifier: boolean
 ) {
   const timesToBeApplied = tripleModifier ? 3 : doubleModifier ? 2 : 1;
-  pressAction("PAUSE");
-
   for (var i = 0; i < timesToBeApplied; i++) {
-    pressAction(action);
+    await executeAction(action);
     await sleep(5000);
   }
-
-  pressAction("PRINT");
-  pressAction("SAVE_STATE");
-  pressAction("PAUSE");
-  await sleep(1000);
 }
-
-function pressAction(action: Action) {
-  RobotJS.keyTap(actionToButton[action]);
-}
-
-const actionToButton: { [key in Action]: string } = {
-  UP: "up",
-  DOWN: "down",
-  LEFT: "left",
-  RIGHT: "right",
-  A: "numpad_1",
-  B: "numpad_2",
-  L: "numpad_4",
-  R: "numpad_5",
-  START: "numpad_3",
-  SELECT: "numpad_6",
-  PRINT: "numpad_7",
-  PAUSE: "numpad_8",
-  SAVE_STATE: "numpad_9",
-};
 
 async function findNextTweetCommand(lastTweetId: string): Promise<Tweet> {
   const mentions = await getRepliesToTweet(lastTweetId);
