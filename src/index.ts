@@ -3,6 +3,9 @@ import concatStream from "concat-stream";
 import axios from "axios";
 require("dotenv").config();
 
+const MAX_WAIT_FOR_REPLIES_IN_MINUTES = 60;
+const WAIT_BETWEEN_TWEETS_IN_MINUTES = 5;
+
 const client = new Twitter({
   consumer_key: process.env.TWITTER_CONSUMER_KEY,
   consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
@@ -98,8 +101,8 @@ async function mainLoop() {
     lastTweet = await tweet(order, lastTweetId);
     console.log("Tweeted!");
 
-    for (var i = 0; i < 5; i++) {
-      console.log(`${5 - i} minutes remaining...`);
+    for (var i = 0; i < WAIT_BETWEEN_TWEETS_IN_MINUTES; i++) {
+      console.log(`${WAIT_BETWEEN_TWEETS_IN_MINUTES - i} minutes remaining...`);
       await sleep(60 * 1000);
     }
   }
@@ -159,14 +162,38 @@ async function applyAction(
 }
 
 async function findNextTweetCommand(lastTweetId: string): Promise<Tweet> {
-  const mentions = await getRepliesToTweet(lastTweetId);
-  const mentionsWithActions = mentions.filter((tweet) => tweet.action !== null);
-  if (mentionsWithActions.length > 0) {
-    return getRandomItemFromArray(mentionsWithActions);
+  const mentionWithAction = await getMentionWithAction(lastTweetId);
+
+  return mentionWithAction !== null
+    ? mentionWithAction
+    : await getRandomCommandTweet();
+}
+
+async function getMentionWithAction(
+  lastTweetId: string
+): Promise<Tweet | null> {
+  const waitTimeBetweenChecks = 60 * 1000;
+
+  for (
+    var time = 0;
+    time < MAX_WAIT_FOR_REPLIES_IN_MINUTES * 60 * 1000;
+    time += waitTimeBetweenChecks
+  ) {
+    const mentions = await getRepliesToTweet(lastTweetId);
+    const mentionsWithActions = mentions.filter(
+      (tweet) => tweet.action !== null
+    );
+
+    if (mentionsWithActions.length > 0) {
+      return getRandomItemFromArray(mentionsWithActions);
+    } else {
+      await sleep(waitTimeBetweenChecks);
+    }
   }
 
-  return await getRandomCommandTweet();
+  return null;
 }
+
 function getRandomItemFromArray(array: Array<any>): any {
   return array[Math.floor(Math.random() * array.length)];
 }
