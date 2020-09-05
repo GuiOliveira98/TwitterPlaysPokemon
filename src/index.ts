@@ -3,6 +3,19 @@ import concatStream from "concat-stream";
 import axios from "axios";
 require("dotenv").config();
 
+main();
+async function main() {
+  try {
+    await mainLoop();
+  } catch (error) {
+    console.log("Ocorreu um erro!", error);
+
+    const slackMessage = `Ocorreu um erro no bot Twitter Plays Pokémon!
+Erro da Mensagem: ${error.message}`;
+    await sendSlackMessage(slackMessage);
+  }
+}
+
 const MAX_WAIT_FOR_REPLIES_IN_MINUTES = 60;
 const WAIT_BETWEEN_TWEETS_IN_MINUTES = 5;
 
@@ -82,7 +95,10 @@ async function executeAction(action: Action) {
   });
 }
 
-mainLoop();
+async function sendSlackMessage(text: string) {
+  axios.post(process.env.SLACK_WEBHOOK, { text });
+}
+
 async function mainLoop() {
   let lastTweet: Tweet | null = null;
 
