@@ -48,6 +48,8 @@ type Tweet = {
   link: string;
   inReplyToStatusId: string | null;
   actions: Action[];
+  favorited: boolean;
+  retweeted: boolean;
 };
 
 const API = process.env.API;
@@ -222,6 +224,8 @@ function normalizeTweet(raw: any): Tweet {
   const inReplyToStatusId = raw.in_reply_to_status_id_str;
   const text = raw.full_text ?? raw.text;
   const actions = getActionsFromText(text);
+  const retweeted = raw.retweeted;
+  const favorited = raw.favorited;
 
   return {
     id,
@@ -230,6 +234,8 @@ function normalizeTweet(raw: any): Tweet {
     inReplyToStatusId,
     text,
     actions,
+    retweeted,
+    favorited,
   };
 }
 
@@ -243,8 +249,9 @@ function getActionsFromText(text: string): Action[] {
 }
 
 async function getRandomCommandTweet(): Promise<Tweet> {
+  const query = `Pokemon ${getRandomItemFromArray(PLAYER_ACTIONS)}`;
   const response = await client.get("search/tweets", {
-    q: "Pokemon " + getRandomItemFromArray(PLAYER_ACTIONS),
+    q: query,
     since_id: 54321,
     tweet_mode: "extended",
     result_type: "recent",
@@ -252,11 +259,18 @@ async function getRandomCommandTweet(): Promise<Tweet> {
     include_entities: true,
   });
 
-  const tweetsWithActions: Tweet[] = response.statuses
+  const validTweets: Tweet[] = response.statuses
     .map((tweet) => normalizeTweet(tweet))
-    .filter((tweet) => tweet.action !== null);
+    .filter((tweet) => tweet.action.length > 0)
+    .filter((tweet) => !tweet.retweeted)
+    .filter((tweet) => !tweet.favorited)
+    .filter((tweet) => tweet.username !== "TweetsPlaysPkmn");
 
-  return getRandomItemFromArray(tweetsWithActions);
+  if (validTweets.length === 0) {
+    throw Error(`No valid tweets found for query: "${query}"`);
+  }
+
+  return getRandomItemFromArray(validTweets);
 }
 
 main();
