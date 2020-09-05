@@ -131,7 +131,7 @@ async function tweet(order: Tweet, lastTweetId: string) {
 
     return normalizedTweet;
   } catch (error) {
-    throw new Error(`Error on tweet: ${error}`);
+    throw new Error(`Error on tweet: ${error.message}`);
   }
 }
 
