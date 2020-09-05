@@ -3,19 +3,6 @@ import concatStream from "concat-stream";
 import axios from "axios";
 require("dotenv").config();
 
-main();
-async function main() {
-  try {
-    await mainLoop();
-  } catch (error) {
-    console.log("Ocorreu um erro!", error);
-
-    const slackMessage = `Ocorreu um erro no bot Twitter Plays Pokémon!
-Erro da Mensagem: ${error.message}`;
-    await sendSlackMessage(slackMessage);
-  }
-}
-
 const MAX_WAIT_FOR_REPLIES_IN_MINUTES = 60;
 const WAIT_BETWEEN_TWEETS_IN_MINUTES = 5;
 
@@ -178,6 +165,7 @@ async function applyAction(
 }
 
 async function findNextTweetCommand(lastTweetId: string): Promise<Tweet> {
+  console.log("Trying to get a reply with an action...");
   const mentionWithAction = await getMentionWithAction(lastTweetId);
 
   return mentionWithAction !== null
@@ -201,8 +189,14 @@ async function getMentionWithAction(
     );
 
     if (mentionsWithActions.length > 0) {
+      console.log("Found tweet reply!");
       return getRandomItemFromArray(mentionsWithActions);
     } else {
+      console.log(
+        `Get reply failed! ${
+          MAX_WAIT_FOR_REPLIES_IN_MINUTES - time / 60000
+        } minutes to search for a random tweet...`
+      );
       await sleep(waitTimeBetweenChecks);
     }
   }
@@ -250,10 +244,11 @@ function normalizeTweet(raw: any): Tweet {
 }
 
 function findActionFromText(text: string) {
-  const words = text.toLowerCase().split(" ");
-  const action = PLAYER_ACTIONS.find((action) =>
-    words.find((word) => word === action.toLowerCase())
-  );
+  const words = text.toUpperCase().split(/[^a-zA-Z]/);
+  const action = words.find((word) =>
+    PLAYER_ACTIONS.find((action) => action === word)
+  ) as Action | undefined;
+
   return action ?? null;
 }
 
@@ -272,4 +267,17 @@ async function getRandomCommandTweet(): Promise<Tweet> {
     .filter((tweet) => tweet.action !== null);
 
   return getRandomItemFromArray(tweetsWithActions);
+}
+
+main();
+async function main() {
+  try {
+    await mainLoop();
+  } catch (error) {
+    console.log("Ocorreu um erro!", error);
+
+    const slackMessage = `Ocorreu um erro no bot Twitter Plays Pokémon!
+Erro da Mensagem: ${error.message}`;
+    await sendSlackMessage(slackMessage);
+  }
 }
