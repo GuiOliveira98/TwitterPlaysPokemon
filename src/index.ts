@@ -138,7 +138,7 @@ async function tweet(order: Tweet, lastTweetId: string) {
 function generateTweetStatus(order: Tweet) {
   const buttonsPressed = order.actions.length;
   if (buttonsPressed == 1) {
-    const text = `@${order.username} pressed ${order.actions[0]}!
+    const text = `Player @${order.username} pressed ${order.actions[0]}!
 [by tweeting the word ${order.actions[0]}]
     
 What should we do next?
@@ -149,9 +149,9 @@ ${order.link}`;
     return text;
   }
 
-  const text = `@${order.username} pressed ${order.actions[0]} and other ${
-    buttonsPressed - 1
-  } inputs!
+  const text = `Player @${order.username} pressed ${
+    order.actions[0]
+  } and other ${buttonsPressed - 1} inputs!
 [by tweeting the word ${order.actions[0]} and other ${
     buttonsPressed - 1
   } keywords]
