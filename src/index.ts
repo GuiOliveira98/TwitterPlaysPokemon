@@ -47,9 +47,7 @@ type Tweet = {
   username: string;
   link: string;
   inReplyToStatusId: string | null;
-  action: Action | null;
-  doubleModifier: boolean;
-  tripleModifier: boolean;
+  actions: Action[];
 };
 
 const API = process.env.API;
@@ -97,7 +95,7 @@ async function mainLoop() {
     console.log("Order received!", order);
 
     console.log("Applying action...");
-    await applyAction(order.action, order.doubleModifier, order.tripleModifier);
+    await applyAction(order.actions);
     await executeAction("DOWNLOAD_SAVE");
 
     console.log("Tweeting...");
@@ -123,20 +121,7 @@ async function tweet(order: Tweet, lastTweetId: string) {
       in_reply_to_status_id: lastTweetId,
       username: "TweetsPlaysPkmn",
       media_ids: media.media_id_string,
-      status: `Button ${order.action} pressed ${
-        order.tripleModifier
-          ? "3 times "
-          : order.doubleModifier
-          ? "2 times "
-          : ""
-      }by @${order.username}!
-[by tweeting a message with the word "${order.action}"]
-
-What should we do next?
-[Reply with a button to be pressed]
-
-#Pokemon #PokemonMastersEX
-${order.link}`,
+      status: generateTweetStatus(order),
     };
 
     const tweet = await client.post("statuses/update", status);
@@ -148,18 +133,28 @@ ${order.link}`,
   }
 }
 
+function generateTweetStatus(order: Tweet) {
+  const text = `@${order.username} pressed ${order.actions.join(" ")}!
+[by tweeting a message with the words ${order.actions
+    .map((action) => `"${action}"`)
+    .join(" ")}]
+
+What should we do next?
+[Reply with the buttons to be pressed]
+
+#Pokemon #PokemonMastersEX
+${order.link}`;
+
+  return text;
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function applyAction(
-  action: Action,
-  doubleModifier: boolean,
-  tripleModifier: boolean
-) {
-  const timesToBeApplied = tripleModifier ? 3 : doubleModifier ? 2 : 1;
-  for (var i = 0; i < timesToBeApplied; i++) {
-    await executeAction(action);
+async function applyAction(actions: Action[]) {
+  for (var i = 0; i < actions.length; i++) {
+    await executeAction(actions[i]);
     await sleep(5000);
   }
 }
@@ -185,7 +180,7 @@ async function getMentionWithAction(
   ) {
     const mentions = await getRepliesToTweet(lastTweetId);
     const mentionsWithActions = mentions.filter(
-      (tweet) => tweet.action !== null
+      (tweet) => tweet.actions.length > 0
     );
 
     if (mentionsWithActions.length > 0) {
@@ -226,10 +221,7 @@ function normalizeTweet(raw: any): Tweet {
   const link = `https://twitter.com/${username}/status/${id}`;
   const inReplyToStatusId = raw.in_reply_to_status_id_str;
   const text = raw.full_text ?? raw.text;
-  const action = findActionFromText(text);
-
-  const doubleModifier = text.toLowerCase().includes("double");
-  const tripleModifier = text.toLowerCase().includes("triple");
+  const actions = getActionsFromText(text);
 
   return {
     id,
@@ -237,19 +229,17 @@ function normalizeTweet(raw: any): Tweet {
     link,
     inReplyToStatusId,
     text,
-    action,
-    doubleModifier,
-    tripleModifier,
+    actions,
   };
 }
 
-function findActionFromText(text: string) {
+function getActionsFromText(text: string): Action[] {
   const words = text.toUpperCase().split(/[^a-zA-Z]/);
-  const action = words.find((word) =>
+  const actions = words.filter((word) =>
     PLAYER_ACTIONS.find((action) => action === word)
-  ) as Action | undefined;
+  ) as Action[];
 
-  return action ?? null;
+  return actions.slice(0, 10);
 }
 
 async function getRandomCommandTweet(): Promise<Tweet> {
