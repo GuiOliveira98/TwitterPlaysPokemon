@@ -3,7 +3,7 @@ import concatStream from "concat-stream";
 import axios from "axios";
 require("dotenv").config();
 
-const MAX_WAIT_FOR_REPLIES_IN_MINUTES = 60;
+const MAX_WAIT_FOR_REPLIES_IN_MINUTES = 30;
 const WAIT_BETWEEN_TWEETS_IN_MINUTES = 5;
 
 const client = new Twitter({
@@ -275,10 +275,10 @@ async function getRandomCommandTweet(): Promise<Tweet> {
 
   const validTweets: Tweet[] = response.statuses
     .map((tweet) => normalizeTweet(tweet))
-    .filter((tweet) => tweet.action.length > 0)
-    .filter((tweet) => !tweet.retweeted)
-    .filter((tweet) => !tweet.favorited)
-    .filter((tweet) => tweet.username !== "TweetsPlaysPkmn");
+    .filter((tweet: Tweet) => tweet.actions.length > 0)
+    .filter((tweet: Tweet) => !tweet.retweeted)
+    .filter((tweet: Tweet) => !tweet.favorited)
+    .filter((tweet: Tweet) => tweet.username !== "TweetsPlaysPkmn");
 
   if (validTweets.length === 0) {
     throw Error(`No valid tweets found for query: "${query}"`);
