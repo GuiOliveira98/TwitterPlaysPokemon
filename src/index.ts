@@ -3,7 +3,7 @@ import concatStream from "concat-stream";
 import axios from "axios";
 require("dotenv").config();
 
-const MAX_WAIT_FOR_REPLIES_IN_MINUTES = 30;
+const MAX_WAIT_FOR_REPLIES_IN_MINUTES = 60;
 const WAIT_BETWEEN_TWEETS_IN_MINUTES = 5;
 
 const client = new Twitter({
