@@ -3,7 +3,7 @@ import concatStream from "concat-stream";
 import axios from "axios";
 require("dotenv").config();
 
-const WAIT_BETWEEN_TWEETS_IN_MINUTES = 3;
+const WAIT_BETWEEN_TWEETS_IN_MINUTES = 5;
 
 const client = new Twitter({
   consumer_key: process.env.TWITTER_CONSUMER_KEY,
