@@ -3,7 +3,6 @@ import concatStream from "concat-stream";
 import axios from "axios";
 require("dotenv").config();
 
-const MAX_WAIT_FOR_REPLIES_IN_MINUTES = 60;
 const WAIT_BETWEEN_TWEETS_IN_MINUTES = 5;
 
 const client = new Twitter({
@@ -179,21 +178,13 @@ async function findNextTweetCommand(lastTweetId: string): Promise<Tweet> {
   console.log("Trying to get a reply with an action...");
   const mentionWithAction = await getMentionWithAction(lastTweetId);
 
-  return mentionWithAction !== null
-    ? mentionWithAction
-    : await getRandomCommandTweet();
+  return mentionWithAction;
 }
 
 async function getMentionWithAction(
   lastTweetId: string
 ): Promise<Tweet | null> {
-  const waitTimeBetweenChecks = 60 * 1000;
-
-  for (
-    var time = 0;
-    time < MAX_WAIT_FOR_REPLIES_IN_MINUTES * 60 * 1000;
-    time += waitTimeBetweenChecks
-  ) {
+  while (true) {
     const mentions = await getRepliesToTweet(lastTweetId);
     const mentionsWithActions = mentions.filter(
       (tweet) => tweet.actions.length > 0
@@ -202,17 +193,8 @@ async function getMentionWithAction(
     if (mentionsWithActions.length > 0) {
       console.log("Found tweet reply!");
       return getRandomItemFromArray(mentionsWithActions);
-    } else {
-      console.log(
-        `Get reply failed! ${
-          MAX_WAIT_FOR_REPLIES_IN_MINUTES - time / 60000
-        } minutes to search for a random tweet...`
-      );
-      await sleep(waitTimeBetweenChecks);
     }
   }
-
-  return null;
 }
 
 function getRandomItemFromArray(array: Array<any>): any {
@@ -260,31 +242,6 @@ function getActionsFromText(text: string): Action[] {
   ) as Action[];
 
   return actions.slice(0, 10);
-}
-
-async function getRandomCommandTweet(): Promise<Tweet> {
-  const query = `Pokemon ${getRandomItemFromArray(PLAYER_ACTIONS)}`;
-  const response = await client.get("search/tweets", {
-    q: query,
-    since_id: 54321,
-    tweet_mode: "extended",
-    result_type: "recent",
-    count: 50,
-    include_entities: true,
-  });
-
-  const validTweets: Tweet[] = response.statuses
-    .map((tweet) => normalizeTweet(tweet))
-    .filter((tweet: Tweet) => tweet.actions.length > 0)
-    .filter((tweet: Tweet) => !tweet.retweeted)
-    .filter((tweet: Tweet) => !tweet.favorited)
-    .filter((tweet: Tweet) => tweet.username !== "TweetsPlaysPkmn");
-
-  if (validTweets.length === 0) {
-    throw Error(`No valid tweets found for query: "${query}"`);
-  }
-
-  return getRandomItemFromArray(validTweets);
 }
 
 main();
