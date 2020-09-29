@@ -177,7 +177,6 @@ async function applyAction(actions: Action[]) {
 async function findNextTweetCommand(lastTweetId: string): Promise<Tweet> {
   console.log("Trying to get a reply with an action...");
   const mentionWithAction = await getMentionWithAction(lastTweetId);
-
   return mentionWithAction;
 }
 
@@ -193,6 +192,8 @@ async function getMentionWithAction(
     if (mentionsWithActions.length > 0) {
       console.log("Found tweet reply!");
       return getRandomItemFromArray(mentionsWithActions);
+    }else{
+      await sleep(30 * 1000);
     }
   }
 }
