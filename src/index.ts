@@ -192,7 +192,7 @@ async function getMentionWithAction(
     if (mentionsWithActions.length > 0) {
       console.log("Found tweet reply!");
       return getRandomItemFromArray(mentionsWithActions);
-    }else{
+    } else {
       await sleep(30 * 1000);
     }
   }
