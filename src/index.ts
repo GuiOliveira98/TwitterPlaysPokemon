@@ -142,7 +142,7 @@ function generateTweetStatus(order: Tweet) {
     
 What should we do next?
 
-#Pokemon #PokemonMastersEX
+#Pokemon
 ${order.link}`;
 
     return text;
@@ -157,7 +157,7 @@ ${order.link}`;
     
 What should we do next?
 
-#Pokemon #PokemonMastersEX
+#Pokemon
 ${order.link}`;
 
   return text;
