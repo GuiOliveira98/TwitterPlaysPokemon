@@ -99,6 +99,9 @@ async function mainLoop() {
     await applyAction(order.actions);
     await executeAction("DOWNLOAD_SAVE");
 
+    console.log("Waiting to take screenshot...");
+    await sleep(10 * 1000);
+
     console.log("Tweeting...");
     lastTweet = await tweet(order, lastTweetId);
     console.log("Tweeted!");
