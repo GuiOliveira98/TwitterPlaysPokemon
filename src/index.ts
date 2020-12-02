@@ -196,8 +196,8 @@ async function getMentionWithAction(
       console.log("Found tweet reply!");
       return getRandomItemFromArray(mentionsWithActions);
     } else {
-      console.log("No tweets found... trying again in 30 seconds.");
-      await sleep(30 * 1000);
+      console.log("No tweets found... trying again in 60 seconds.");
+      await sleep(60 * 1000);
     }
   }
 }
