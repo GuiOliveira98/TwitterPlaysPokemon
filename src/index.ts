@@ -138,32 +138,8 @@ async function tweet(order: Tweet, lastTweetId: string) {
 }
 
 function generateTweetStatus(order: Tweet) {
-  const buttonsPressed = order.actions.length;
-  if (buttonsPressed == 1) {
-    const text = `Player @${order.username} pressed ${order.actions[0]}!
-[by tweeting the word ${order.actions[0]}]
-    
-What should we do next?
-
-#Pokemon
+  return `@${order.username} pressed ${order.actions.join(" ")}! #Pokemon
 ${order.link}`;
-
-    return text;
-  }
-
-  const text = `Player @${order.username} pressed ${
-    order.actions[0]
-  } and other ${buttonsPressed - 1} inputs!
-[by tweeting the word ${order.actions[0]} and other ${
-    buttonsPressed - 1
-  } keywords]
-    
-What should we do next?
-
-#Pokemon
-${order.link}`;
-
-  return text;
 }
 
 function sleep(ms) {
