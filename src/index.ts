@@ -138,7 +138,8 @@ async function tweet(order: Tweet, lastTweetId: string) {
 }
 
 function generateTweetStatus(order: Tweet) {
-  return `@${order.username} pressed ${order.actions.join(" ")}! #Pokemon
+  // If the tweet starts with the username, Twitter reads it as a reply
+  return `. @${order.username} pressed ${order.actions.join(" ")}! #Pokemon
 ${order.link}`;
 }
 
